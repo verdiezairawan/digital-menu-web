@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --dm-background: #f7f9fc;
+  --dm-surface: #ffffff;
+  --dm-border: #e5eaf2;
+  --dm-foreground: #0f172a;
+  --dm-muted: #475569;
+
+  --dm-primary: #0b2957;
+  --dm-primary-hover: #0a234b;
+  --dm-primary-soft: #e7eef9;
+
+  --dm-accent-blue: #3b82f6;
+  --dm-accent-cyan: #06b6d4;
+  --dm-accent-indigo: #6366f1;
+
+  --dm-success: #16a34a;
+  --dm-warning: #f59e0b;
+  --dm-danger: #ef4444;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--dm-background);
+  --color-surface: var(--dm-surface);
+  --color-border: var(--dm-border);
+  --color-foreground: var(--dm-foreground);
+  --color-muted: var(--dm-muted);
+
+  --color-primary: var(--dm-primary);
+  --color-primary-hover: var(--dm-primary-hover);
+  --color-primary-soft: var(--dm-primary-soft);
+
+  --color-accent-blue: var(--dm-accent-blue);
+  --color-accent-cyan: var(--dm-accent-cyan);
+  --color-accent-indigo: var(--dm-accent-indigo);
+
+  --color-success: var(--dm-success);
+  --color-warning: var(--dm-warning);
+  --color-danger: var(--dm-danger);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--dm-background);
+  color: var(--dm-foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
 }
