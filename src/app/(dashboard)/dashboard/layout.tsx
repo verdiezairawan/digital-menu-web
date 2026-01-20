@@ -21,9 +21,20 @@ export default async function DashboardLayout({
     { href: "/dashboard/chef", label: "Chef", roles: ["unit-manager", "chef"] },
   ];
 
-  const visibleNav = navItems
-    .filter((i) => i.roles.includes(session.user.role))
-    .map(({ href, label }) => ({ href, label }));
+  const visibleNav =
+    session.user.role === "chef"
+      ? [
+          { href: "/dashboard/chef", label: "Dashboard" },
+          { href: "/dashboard/chef/menu-cycle", label: "Siklus Menu" },
+          { href: "/dashboard/chef/raw-materials/add", label: "Add Raw Material" },
+          { href: "/dashboard/chef/raw-materials", label: "Raw Material Data" },
+          { href: "/dashboard/chef/recipes/new", label: "Create New Recipe" },
+          { href: "/dashboard/chef/recipes", label: "Recipe Data" },
+          { href: "/dashboard/chef/store-request", label: "Store Request" },
+        ]
+      : navItems
+          .filter((i) => i.roles.includes(session.user.role))
+          .map(({ href, label }) => ({ href, label }));
 
   return (
     <DashboardShell

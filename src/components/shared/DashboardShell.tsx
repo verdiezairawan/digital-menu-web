@@ -68,6 +68,191 @@ function NavIcon({ href }: { href: string }) {
     );
   }
 
+  if (href.includes("/chef/raw-materials/add")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="M12 8V16"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 12H16"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  if (href.includes("/chef/raw-materials")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M4 7H20V20H4V7Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M4 7L6 4H18L20 7"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M8 11H16"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 15H13"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  if (href.includes("/chef/recipes/new")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 20H21"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M16.5 3.5C17.3284 2.67157 18.6716 2.67157 19.5 3.5C20.3284 4.32843 20.3284 5.67157 19.5 6.5L8 18L3 19L4 14L16.5 3.5Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (href.includes("/chef/recipes")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M5 4H18C19.1046 4 20 4.89543 20 6V20H7C5.89543 20 5 19.1046 5 18V4Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M5 16H20"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 8H16"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 12H14"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  if (href.includes("/chef/menu-cycle")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M17 1L21 5L17 9"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M3 11V9C3 6.79086 4.79086 5 7 5H21"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M7 23L3 19L7 15"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M21 13V15C21 17.2091 19.2091 19 17 19H3"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (href.includes("/chef/store-request")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M4 4H20V20H4V4Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12 16V8"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 12L12 8L16 12"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (href.includes("/chef")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M4 10.5L12 4L20 10.5V20H4V10.5Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 20V14H15V20"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
   return (
     <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
@@ -103,18 +288,22 @@ function IconButton({
   onClick,
   children,
   className,
+  size = "md",
 }: {
   label: string;
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
+  size?: "md" | "sm";
 }) {
+  const sizeClassName = size === "sm" ? "h-8 w-8" : "h-10 w-10";
+
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-white text-primary transition-colors hover:bg-primary-soft ${className ?? ""}`}
+      className={`inline-flex ${sizeClassName} items-center justify-center rounded-2xl border border-border bg-white text-primary transition-colors hover:bg-primary-soft ${className ?? ""}`}
     >
       {children}
     </button>
@@ -149,7 +338,7 @@ export default function DashboardShell({ user, navItems, children }: Props) {
             onClick={() => setIsMobileOpen(false)}
           >
             <div
-              className={`grid shrink-0 place-items-center rounded-2xl bg-primary-soft text-sm font-extrabold tracking-tight text-primary ${isCollapsed ? "h-9 w-9" : "h-10 w-10"}`}
+              className={`grid shrink-0 place-items-center rounded-2xl bg-primary-soft text-sm font-extrabold tracking-tight text-primary ${isCollapsed ? "h-8 w-8" : "h-10 w-10"}`}
             >
               DM
             </div>
@@ -166,7 +355,7 @@ export default function DashboardShell({ user, navItems, children }: Props) {
               <IconButton
                 label={isCollapsed ? "Buka sidebar" : "Tutup sidebar"}
                 onClick={() => setIsCollapsed((v) => !v)}
-                className={isCollapsed ? "h-9 w-9" : undefined}
+                size={isCollapsed ? "sm" : "md"}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path
@@ -289,7 +478,7 @@ export default function DashboardShell({ user, navItems, children }: Props) {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-6 py-10">{children}</main>
+        <main className="w-full px-6 py-10">{children}</main>
       </div>
     </div>
   );
