@@ -317,6 +317,19 @@ export default function DashboardShell({ user, navItems, children }: Props) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const initials = useMemo(() => getInitials(user.name), [user.name]);
+  const activeHref = useMemo(() => {
+    let best: string | null = null;
+
+    for (const item of navItems) {
+      const href = item.href;
+      const isMatch = pathname === href || pathname.startsWith(`${href}/`);
+      if (!isMatch) continue;
+
+      if (!best || href.length > best.length) best = href;
+    }
+
+    return best;
+  }, [navItems, pathname]);
 
   return (
     <div className="min-h-screen bg-background md:flex">
@@ -397,8 +410,7 @@ export default function DashboardShell({ user, navItems, children }: Props) {
 
           <div className="space-y-1">
             {navItems.map((item) => {
-              const isActive =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const isActive = item.href === activeHref;
 
               return (
                 <Link
