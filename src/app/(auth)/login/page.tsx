@@ -150,10 +150,10 @@ export default async function LoginPage() {
                       Tips
                     </div>
                     <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                      Mulai dari demo akun
+                      Masuk pakai akun Firebase
                     </h2>
                     <p className="text-sm leading-6 text-muted">
-                      Klik tombol Admin/Kasir/Dapur untuk mengisi kredensial otomatis.
+                      Gunakan email dan password yang terdaftar di Firebase Authentication.
                     </p>
                   </div>
                   <div className="hidden shrink-0 sm:block">

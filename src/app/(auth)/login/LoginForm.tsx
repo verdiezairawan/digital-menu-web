@@ -70,32 +70,35 @@ export default function LoginForm() {
     setError(null);
     setIsLoading(true);
     try {
-      if (isFirebaseConfigured()) {
-        try {
-          const { loginWithEmailPassword } = await import("@/lib/firebase/auth");
-          await loginWithEmailPassword(email, password);
-        } catch (error) {
-          setError(getFirebaseErrorMessage(error));
-          return;
-        }
+      if (!isFirebaseConfigured()) {
+        setError("Firebase belum dikonfigurasi. Isi NEXT_PUBLIC_FIREBASE_* di .env.local.");
+        return;
+      }
+
+      let idToken: string;
+      try {
+        const { loginWithEmailPassword } = await import("@/lib/firebase/auth");
+        const credential = await loginWithEmailPassword(email, password);
+        idToken = await credential.user.getIdToken();
+      } catch (error) {
+        setError(getFirebaseErrorMessage(error));
+        return;
       }
 
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ idToken }),
       });
 
       const data = (await response.json()) as LoginResponse;
       if (!response.ok) {
         const message = typeof data.error === "string" ? data.error : "Login gagal.";
-        if (isFirebaseConfigured()) {
-          try {
-            const { logout } = await import("@/lib/firebase/auth");
-            await logout();
-          } catch {
-            // ignore
-          }
+        try {
+          const { logout } = await import("@/lib/firebase/auth");
+          await logout();
+        } catch {
+          // ignore
         }
         setError(message);
         return;
@@ -105,16 +108,16 @@ export default function LoginForm() {
       router.replace(safeNext ?? redirectTo);
       router.refresh();
     } catch {
+      try {
+        const { logout } = await import("@/lib/firebase/auth");
+        await logout();
+      } catch {
+        // ignore
+      }
       setError("Terjadi kesalahan jaringan. Coba lagi.");
     } finally {
       setIsLoading(false);
     }
-  }
-
-  function fillDemo(email: string, password: string) {
-    setError(null);
-    setEmail(email);
-    setPassword(password);
   }
 
   return (
@@ -180,56 +183,6 @@ export default function LoginForm() {
           {isLoading ? "Memproses..." : "Masuk"}
         </button>
       </form>
-
-      <div className="mt-6 rounded-2xl border border-border bg-background p-4">
-        <div className="mb-3 text-xs font-semibold tracking-wide text-foreground">
-          Demo akun
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => fillDemo("unitmanager@demo.com", "manager123")}
-            className="h-9 rounded-xl border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-primary-soft"
-          >
-            Unit Manager
-          </button>
-          <button
-            type="button"
-            onClick={() => fillDemo("storekeeper@demo.com", "storekeeper123")}
-            className="h-9 rounded-xl border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-primary-soft"
-          >
-            Storekeeper
-          </button>
-          <button
-            type="button"
-            onClick={() => fillDemo("chef1@demo.com", "chef123")}
-            className="h-9 rounded-xl border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-primary-soft"
-          >
-            Chef 1
-          </button>
-          <button
-            type="button"
-            onClick={() => fillDemo("chef2@demo.com", "chef123")}
-            className="h-9 rounded-xl border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-primary-soft"
-          >
-            Chef 2
-          </button>
-          <button
-            type="button"
-            onClick={() => fillDemo("chef3@demo.com", "chef123")}
-            className="h-9 rounded-xl border border-border bg-white px-3 text-xs font-medium text-foreground hover:bg-primary-soft"
-          >
-            Chef 3
-          </button>
-        </div>
-        <div className="mt-3 text-xs text-muted">
-          Untuk produksi, ganti autentikasi demo di{" "}
-          <code className="font-mono text-foreground">src/lib/auth/demoUsers.ts</code>.
-          <div className="mt-1">
-            Kalau Firebase Auth diaktifin, pastiin akun demo ini juga dibuat di Firebase Authentication.
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

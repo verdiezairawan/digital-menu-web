@@ -1,5 +1,5 @@
 import DashboardShell from "@/components/shared/DashboardShell";
-import { getRoleLabel } from "@/lib/auth/demoUsers";
+import { getRoleLabel } from "@/lib/auth/roleLabel";
 import { requireSession } from "@/lib/auth/session";
 import type { Role } from "@/lib/auth/roles";
 

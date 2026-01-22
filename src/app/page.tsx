@@ -39,7 +39,7 @@ export default async function Home() {
                 href="/login"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-white px-5 text-sm font-medium text-foreground hover:bg-primary-soft"
               >
-                Coba demo
+                Buka Login
               </Link>
             </div>
           </main>
@@ -62,7 +62,7 @@ export default async function Home() {
                   {session ? "Sudah login" : "Belum login"}
                 </div>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  {session ? `Role: ${session.user.role}` : "Gunakan demo akun untuk mencoba."}
+                  {session ? `Role: ${session.user.role}` : "Silakan login untuk mulai."}
                 </p>
               </div>
 

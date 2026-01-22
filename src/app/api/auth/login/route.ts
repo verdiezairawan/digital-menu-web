@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "@/lib/auth/constants";
-import { authenticateDemoUser } from "@/lib/auth/demoUsers";
 import { getRoleRedirectPath } from "@/lib/auth/redirect";
+import { resolveRoleForEmail } from "@/lib/auth/roleMapping";
 import { getAuthSecret } from "@/lib/auth/secret";
 import { createSessionToken } from "@/lib/auth/token";
+import { verifyFirebaseIdToken } from "@/lib/firebase/verifyIdToken";
 
 export const runtime = "nodejs";
 
 type LoginBody = {
-  email?: unknown;
-  password?: unknown;
+  idToken?: unknown;
 };
 
 export async function POST(request: NextRequest) {
@@ -21,20 +21,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Body harus berupa JSON." }, { status: 400 });
   }
 
-  const email = typeof body.email === "string" ? body.email.trim() : "";
-  const password = typeof body.password === "string" ? body.password : "";
-
-  if (!email || !password) {
+  const idToken = typeof body.idToken === "string" ? body.idToken.trim() : "";
+  if (!idToken) {
     return NextResponse.json(
-      { error: "Email dan password wajib diisi." },
+      { error: "Token login wajib diisi." },
       { status: 400 },
     );
   }
 
-  const user = authenticateDemoUser(email, password);
-  if (!user) {
-    return NextResponse.json({ error: "Email atau password salah." }, { status: 401 });
+  let firebaseUser;
+  try {
+    firebaseUser = await verifyFirebaseIdToken(idToken);
+  } catch {
+    return NextResponse.json(
+      { error: "Gagal verifikasi login. Coba lagi." },
+      { status: 500 },
+    );
   }
+
+  if (!firebaseUser) {
+    return NextResponse.json({ error: "Login tidak valid." }, { status: 401 });
+  }
+
+  const role = resolveRoleForEmail(firebaseUser.email);
+  if (!role) {
+    return NextResponse.json(
+      { error: "Akun belum punya role. Hubungi admin." },
+      { status: 403 },
+    );
+  }
+
+  const user = {
+    id: firebaseUser.uid,
+    email: firebaseUser.email,
+    name: firebaseUser.name ?? firebaseUser.email,
+    role,
+  };
 
   const secret = getAuthSecret();
   const token = createSessionToken(user, secret);
@@ -56,4 +78,3 @@ export async function POST(request: NextRequest) {
 
   return response;
 }
-
