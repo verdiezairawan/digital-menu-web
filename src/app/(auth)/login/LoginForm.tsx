@@ -8,6 +8,43 @@ type LoginResponse = {
   error?: unknown;
 };
 
+function isFirebaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim(),
+  );
+}
+
+function getFirebaseErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.includes("Missing required environment variable")) {
+    return "Firebase belum dikonfigurasi. Isi NEXT_PUBLIC_FIREBASE_* di .env.local.";
+  }
+
+  const code = (() => {
+    if (!error || typeof error !== "object") return null;
+    if (!("code" in error)) return null;
+    const value = (error as { code?: unknown }).code;
+    return typeof value === "string" ? value : null;
+  })();
+
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/user-not-found":
+    case "auth/wrong-password":
+      return "Email atau password salah.";
+    case "auth/too-many-requests":
+      return "Terlalu banyak percobaan. Coba lagi nanti.";
+    case "auth/network-request-failed":
+      return "Koneksi bermasalah. Coba lagi.";
+    default:
+      return "Login Firebase gagal.";
+  }
+}
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,6 +70,16 @@ export default function LoginForm() {
     setError(null);
     setIsLoading(true);
     try {
+      if (isFirebaseConfigured()) {
+        try {
+          const { loginWithEmailPassword } = await import("@/lib/firebase/auth");
+          await loginWithEmailPassword(email, password);
+        } catch (error) {
+          setError(getFirebaseErrorMessage(error));
+          return;
+        }
+      }
+
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,6 +89,14 @@ export default function LoginForm() {
       const data = (await response.json()) as LoginResponse;
       if (!response.ok) {
         const message = typeof data.error === "string" ? data.error : "Login gagal.";
+        if (isFirebaseConfigured()) {
+          try {
+            const { logout } = await import("@/lib/firebase/auth");
+            await logout();
+          } catch {
+            // ignore
+          }
+        }
         setError(message);
         return;
       }
@@ -170,6 +225,9 @@ export default function LoginForm() {
         <div className="mt-3 text-xs text-muted">
           Untuk produksi, ganti autentikasi demo di{" "}
           <code className="font-mono text-foreground">src/lib/auth/demoUsers.ts</code>.
+          <div className="mt-1">
+            Kalau Firebase Auth diaktifin, pastiin akun demo ini juga dibuat di Firebase Authentication.
+          </div>
         </div>
       </div>
     </div>

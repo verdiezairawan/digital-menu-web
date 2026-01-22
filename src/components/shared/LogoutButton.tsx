@@ -8,6 +8,17 @@ type Props = {
   variant?: "default" | "icon";
 };
 
+function isFirebaseConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?.trim() &&
+      process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim(),
+  );
+}
+
 export default function LogoutButton({ className, variant = "default" }: Props) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +27,14 @@ export default function LogoutButton({ className, variant = "default" }: Props) 
     if (isLoading) return;
     setIsLoading(true);
     try {
+      if (isFirebaseConfigured()) {
+        try {
+          const { logout } = await import("@/lib/firebase/auth");
+          await logout();
+        } catch {
+          // ignore
+        }
+      }
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
       router.replace("/login");
