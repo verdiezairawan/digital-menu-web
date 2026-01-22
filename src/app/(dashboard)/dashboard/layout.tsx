@@ -38,7 +38,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      user={{ name: session.user.name, roleLabel }}
+      user={{ name: session.user.name, roleLabel, siteId: session.user.siteId }}
       navItems={visibleNav}
     >
       {children}

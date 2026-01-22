@@ -4,6 +4,7 @@ import { SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "@/lib/auth/constants";
 import { getRoleRedirectPath } from "@/lib/auth/redirect";
 import { resolveRoleForEmail } from "@/lib/auth/roleMapping";
 import { getAuthSecret } from "@/lib/auth/secret";
+import { resolveSiteForEmail } from "@/lib/auth/siteMapping";
 import { createSessionToken } from "@/lib/auth/token";
 import { verifyFirebaseIdToken } from "@/lib/firebase/verifyIdToken";
 
@@ -51,11 +52,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const siteId = resolveSiteForEmail(firebaseUser.email);
+  if (!siteId) {
+    return NextResponse.json(
+      { error: "Akun belum terdaftar ke outlet/site. Hubungi admin." },
+      { status: 403 },
+    );
+  }
+
   const user = {
     id: firebaseUser.uid,
     email: firebaseUser.email,
     name: firebaseUser.name ?? firebaseUser.email,
     role,
+    siteId,
   };
 
   const secret = getAuthSecret();

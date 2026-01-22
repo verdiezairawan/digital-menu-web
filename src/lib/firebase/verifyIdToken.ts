@@ -20,8 +20,25 @@ type LookupErrorResponse = {
   };
 };
 
+function stripOuterQuotes(value: string): string {
+  if (value.length < 2) return value;
+  const first = value[0];
+  const last = value[value.length - 1];
+  if ((first === "\"" && last === "\"") || (first === "'" && last === "'")) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function normalizeEnv(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const normalized = stripOuterQuotes(trimmed).trim();
+  return normalized ? normalized : null;
+}
+
 function getFirebaseApiKey(): string {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
+  const apiKey = normalizeEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
   if (apiKey) return apiKey;
   throw new Error("NEXT_PUBLIC_FIREBASE_API_KEY belum di-set.");
 }
@@ -76,4 +93,3 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<VerifiedFi
 
   return { uid, email, name: displayName || null };
 }
-

@@ -11,4 +11,5 @@ export type AuthUser = {
   email: string;
   name: string;
   role: Role;
+  siteId: string;
 };

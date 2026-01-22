@@ -64,6 +64,7 @@ export function verifySessionToken(token: string, secret: string): TokenPayload 
   if (typeof payload.user.id !== "string") return null;
   if (typeof payload.user.email !== "string") return null;
   if (typeof payload.user.name !== "string") return null;
+  if (typeof payload.user.siteId !== "string") return null;
   if (!isRole(payload.user.role)) return null;
 
   const now = Math.floor(Date.now() / 1000);
@@ -71,4 +72,3 @@ export function verifySessionToken(token: string, secret: string): TokenPayload 
 
   return payload;
 }
-

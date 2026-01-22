@@ -15,6 +15,7 @@ type Props = {
   user: {
     name: string;
     roleLabel: string;
+    siteId: string;
   };
   navItems: NavItem[];
   children: React.ReactNode;
@@ -441,7 +442,7 @@ export default function DashboardShell({ user, navItems, children }: Props) {
             {!isCollapsed ? (
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-foreground">{user.name}</div>
-                <div className="truncate text-xs text-muted">{user.roleLabel}</div>
+                <div className="truncate text-xs text-muted">{user.roleLabel} · {user.siteId}</div>
               </div>
             ) : null}
           </div>
@@ -482,7 +483,7 @@ export default function DashboardShell({ user, navItems, children }: Props) {
 
           <div className="min-w-0 text-center">
             <div className="truncate text-sm font-semibold text-foreground">Dashboard</div>
-            <div className="truncate text-xs text-muted">{user.roleLabel}</div>
+            <div className="truncate text-xs text-muted">{user.roleLabel} · {user.siteId}</div>
           </div>
 
           <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-soft text-sm font-bold text-primary">
