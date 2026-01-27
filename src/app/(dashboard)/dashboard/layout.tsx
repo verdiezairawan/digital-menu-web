@@ -12,6 +12,7 @@ export default async function DashboardLayout({
   const roleLabel = getRoleLabel(session.user.role);
 
   const navItems: Array<{ href: string; label: string; roles: Role[] }> = [
+    { href: "/dashboard/superadmin", label: "Manage User", roles: ["superadmin"] },
     { href: "/dashboard/unit-manager", label: "Unit Manager", roles: ["unit-manager"] },
     {
       href: "/dashboard/storekeeper",

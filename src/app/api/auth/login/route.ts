@@ -7,6 +7,7 @@ import { getAuthSecret } from "@/lib/auth/secret";
 import { resolveSiteForEmail } from "@/lib/auth/siteMapping";
 import { createSessionToken } from "@/lib/auth/token";
 import { verifyFirebaseIdToken } from "@/lib/firebase/verifyIdToken";
+import { getUserByEmail } from "@/lib/users/store";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Login tidak valid." }, { status: 401 });
   }
 
-  const role = resolveRoleForEmail(firebaseUser.email);
+  let storedUser = null;
+  try {
+    storedUser = await getUserByEmail(firebaseUser.email);
+  } catch {
+    storedUser = null;
+  }
+  if (storedUser?.status === "inactive") {
+    return NextResponse.json(
+      { error: "Akun sedang dinonaktifkan. Hubungi admin." },
+      { status: 403 },
+    );
+  }
+
+  const role = storedUser?.role ?? resolveRoleForEmail(firebaseUser.email);
   if (!role) {
     return NextResponse.json(
       { error: "Akun belum punya role. Hubungi admin." },
@@ -52,7 +66,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const siteId = resolveSiteForEmail(firebaseUser.email);
+  const siteId = storedUser?.siteId ?? resolveSiteForEmail(firebaseUser.email);
   if (!siteId) {
     return NextResponse.json(
       { error: "Akun belum terdaftar ke outlet/site. Hubungi admin." },
@@ -63,7 +77,7 @@ export async function POST(request: NextRequest) {
   const user = {
     id: firebaseUser.uid,
     email: firebaseUser.email,
-    name: firebaseUser.name ?? firebaseUser.email,
+    name: storedUser?.name ?? firebaseUser.name ?? firebaseUser.email,
     role,
     siteId,
   };

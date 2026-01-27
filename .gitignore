@@ -5,6 +5,9 @@ out/
 .env*
 !.env.example
 
+data/users.json
+firebase-service-account.json
+
 *.log
 .DS_Store
 .vercel/

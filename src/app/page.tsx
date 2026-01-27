@@ -25,7 +25,8 @@ export default async function Home() {
               Kelola menu dan pesanan lebih rapi
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted">
-              Login untuk mengakses dashboard sesuai role: Unit Manager, Storekeeper, atau Chef.
+              Login untuk mengakses dashboard sesuai role: Super Admin, Unit Manager, Storekeeper,
+              atau Chef.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

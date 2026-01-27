@@ -31,6 +31,26 @@ function getInitials(name: string): string {
 function NavIcon({ href }: { href: string }) {
   const base = "h-5 w-5";
 
+  if (href.includes("/superadmin")) {
+    return (
+      <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 3L20 6V12C20 16.4183 16.4183 20 12 21C7.58172 20 4 16.4183 4 12V6L12 3Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 12L11 14L15 10"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
   if (href.includes("/unit-manager")) {
     return (
       <svg className={base} viewBox="0 0 24 24" fill="none" aria-hidden="true">

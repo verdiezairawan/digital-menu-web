@@ -40,7 +40,8 @@ export default async function LoginPage() {
                       Dashboard berbeda untuk tiap role
                     </h2>
                     <p className="text-sm leading-6 text-muted">
-                      Unit Manager, Storekeeper, dan Chef punya akses terpisah agar alur kerja lebih rapi.
+                      Super Admin, Unit Manager, Storekeeper, dan Chef punya akses terpisah agar alur kerja
+                      lebih rapi.
                     </p>
                   </div>
                   <div className="hidden shrink-0 sm:block">

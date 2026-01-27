@@ -3,6 +3,7 @@ import "server-only";
 import { isRole, type Role } from "@/lib/auth/roles";
 
 const DEFAULT_DEV_ROLE: Role = "unit-manager";
+const SUPERADMIN_ROLE: Role = "superadmin";
 
 function stripOuterQuotes(value: string): string {
   if (value.length < 2) return value;
@@ -52,6 +53,8 @@ function parseRoleMap(raw: string): Map<string, Role> {
 
 let cachedRoleMap: Map<string, Role> | null = null;
 let cachedRoleMapRaw: string | null = null;
+let cachedSuperAdminEmails: Set<string> | null = null;
+let cachedSuperAdminEmailsRaw: string | null = null;
 
 function getRoleMap(): Map<string, Role> | null {
   const raw = normalizeEnv(process.env.AUTH_ROLE_BY_EMAIL);
@@ -68,9 +71,58 @@ function getRoleMap(): Map<string, Role> | null {
   return cachedRoleMap;
 }
 
+function parseEmailList(raw: string): Set<string> {
+  const trimmed = raw.trim();
+  const set = new Set<string>();
+  if (!trimmed) return set;
+
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown;
+      if (Array.isArray(parsed)) {
+        for (const value of parsed) {
+          if (typeof value !== "string") continue;
+          const normalized = normalizeEmail(value);
+          if (normalized) set.add(normalized);
+        }
+        return set;
+      }
+    } catch {
+      // fall through to split parser
+    }
+  }
+
+  for (const token of trimmed.split(/[,\n;]/)) {
+    const normalized = normalizeEmail(token);
+    if (normalized) set.add(normalized);
+  }
+
+  return set;
+}
+
+function getSuperAdminEmails(): Set<string> | null {
+  const raw = normalizeEnv(process.env.AUTH_SUPERADMIN_EMAILS);
+  if (!raw) {
+    cachedSuperAdminEmailsRaw = null;
+    cachedSuperAdminEmails = null;
+    return null;
+  }
+
+  if (cachedSuperAdminEmails && cachedSuperAdminEmailsRaw === raw) {
+    return cachedSuperAdminEmails;
+  }
+
+  cachedSuperAdminEmailsRaw = raw;
+  cachedSuperAdminEmails = parseEmailList(raw);
+  return cachedSuperAdminEmails;
+}
+
 export function resolveRoleForEmail(email: string): Role | null {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return null;
+
+  const superAdmins = getSuperAdminEmails();
+  if (superAdmins?.has(normalizedEmail)) return SUPERADMIN_ROLE;
 
   const map = getRoleMap();
   const mappedRole = map?.get(normalizedEmail);
