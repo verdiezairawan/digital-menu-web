@@ -150,6 +150,13 @@ export async function DELETE(
     }
 
     let authWarning: string | null = null;
+    if (existing.role === "superadmin") {
+      return NextResponse.json(
+        { error: "Akun superadmin tidak bisa dihapus." },
+        { status: 403 },
+      );
+    }
+
     if (existing.authUid) {
       try {
         await initAdminAuth();

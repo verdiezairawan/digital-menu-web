@@ -108,6 +108,12 @@ async function resolveServiceAccount(): Promise<ServiceAccount> {
 async function initAdminApp(): Promise<void> {
   if (getApps().length > 0) return;
   const serviceAccount = await resolveServiceAccount();
+  const envProjectId = normalizeEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  if (envProjectId && envProjectId !== serviceAccount.projectId) {
+    throw new Error(
+      `FIREBASE_PROJECT_MISMATCH:${serviceAccount.projectId}:${envProjectId}`,
+    );
+  }
   initializeApp({
     credential: cert(serviceAccount),
     projectId: serviceAccount.projectId,

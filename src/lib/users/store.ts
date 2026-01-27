@@ -113,6 +113,53 @@ export async function createUserRecord(input: {
   return mapDoc(id, user);
 }
 
+export async function upsertUserRecordByEmail(input: {
+  email: string;
+  name: string;
+  jobPosition: string;
+  siteId: string;
+  phone: string;
+  role: Role;
+  status?: UserStatus;
+  authUid?: string | null;
+}): Promise<{ user: StoredUser; created: boolean }> {
+  const normalizedEmail = normalizeEmail(input.email);
+  if (!normalizedEmail) {
+    throw new Error("EMAIL_INVALID");
+  }
+
+  const existing = await getUserByEmail(normalizedEmail);
+  if (existing) {
+    const updates = {
+      name: input.name.trim(),
+      jobPosition: input.jobPosition.trim(),
+      siteId: input.siteId.trim(),
+      phone: input.phone.trim(),
+      role: input.role,
+      status: input.status ?? existing.status,
+      authUid: input.authUid ?? existing.authUid,
+    };
+    const updated = await updateUserRecord(existing.id, updates);
+    if (!updated) {
+      throw new Error("UPSERT_FAILED");
+    }
+    return { user: updated, created: false };
+  }
+
+  const createdUser = await createUserRecord({
+    email: normalizedEmail,
+    name: input.name,
+    jobPosition: input.jobPosition,
+    siteId: input.siteId,
+    phone: input.phone,
+    role: input.role,
+    status: input.status,
+    authUid: input.authUid,
+  });
+
+  return { user: createdUser, created: true };
+}
+
 export async function updateUserRecord(
   id: string,
   updates: Partial<Omit<StoredUser, "id" | "email" | "createdAt">>,

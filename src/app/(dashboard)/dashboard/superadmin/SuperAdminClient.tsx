@@ -233,6 +233,7 @@ export default function SuperAdminClient() {
       });
       const data = await parseResponse<{
         created?: Array<{ email: string; tempPassword: string }>;
+        linked?: Array<{ email: string }>;
         failed?: Array<{ email: string; reason: string }>;
         error?: string;
       }>(response);
@@ -243,8 +244,10 @@ export default function SuperAdminClient() {
       }
 
       const created = Array.isArray(data.created) ? data.created : [];
+      const linked = Array.isArray(data.linked) ? data.linked : [];
       const failed = Array.isArray(data.failed) ? data.failed : [];
-      setImportSummary({ created, failed });
+      const mergedCreated = [...created, ...linked.map((item) => ({ email: item.email, tempPassword: "" }))];
+      setImportSummary({ created: mergedCreated, failed });
       setImportRows([]);
       await loadUsers();
     } catch {
@@ -383,17 +386,20 @@ export default function SuperAdminClient() {
                   Gagal: {importSummary.failed.length}
                 </span>
               </div>
-              {importSummary.created.length > 0 ? (
-                <div className="rounded-xl border border-success/20 bg-success/10 px-3 py-2 text-success">
-                  <div className="text-xs font-semibold uppercase tracking-wide">Password Sementara</div>
-                  <ul className="mt-2 space-y-1 text-xs">
-                    {importSummary.created.map((item) => (
-                      <li key={item.email}>
-                        {item.email}: <span className="font-semibold">{item.tempPassword}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  {importSummary.created.length > 0 ? (
+                    <div className="rounded-xl border border-success/20 bg-success/10 px-3 py-2 text-success">
+                      <div className="text-xs font-semibold uppercase tracking-wide">Password Sementara</div>
+                      <ul className="mt-2 space-y-1 text-xs">
+                        {importSummary.created.map((item) => (
+                          <li key={item.email}>
+                            {item.email}:{" "}
+                            <span className="font-semibold">
+                              {item.tempPassword || "Auth sudah ada"}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
               ) : null}
               {importSummary.failed.length > 0 ? (
                 <div className="rounded-xl border border-danger/20 bg-danger/10 px-3 py-2 text-danger">
@@ -609,6 +615,7 @@ export default function SuperAdminClient() {
                           >
                             Edit
                           </button>
+                        {user.role !== "superadmin" ? (
                           <button
                             type="button"
                             onClick={() => void handleDelete(user)}
@@ -616,6 +623,11 @@ export default function SuperAdminClient() {
                           >
                             Delete
                           </button>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold text-muted">
+                            Protected
+                          </span>
+                        )}
                         </div>
                       </td>
                     </tr>

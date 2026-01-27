@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireRoleFromRequest, getSessionFromRequest } from "@/lib/auth/api";
 import { isRole, type Role } from "@/lib/auth/roles";
-import { createAuthUser } from "@/lib/firebase/authRest";
-import { createUserRecord, listUsers } from "@/lib/users/store";
+import { getAdminAuth, initAdminAuth } from "@/lib/firebase/admin";
+import { listUsers, upsertUserRecordByEmail } from "@/lib/users/store";
 
 export const runtime = "nodejs";
 
@@ -34,6 +34,37 @@ function inferRole(jobPosition: string): Role | null {
   if (normalized.includes("store")) return "storekeeper";
   if (normalized.includes("unit")) return "unit-manager";
   if (normalized.includes("manager")) return "unit-manager";
+  return null;
+}
+
+function isAuthEmailExists(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  if (code.includes("auth/email-already-exists")) return true;
+  const message =
+    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+  return message.toLowerCase().includes("email-already-exists");
+}
+
+function getAuthErrorHint(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  const message =
+    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+  const haystack = `${code} ${message}`.toLowerCase();
+
+  if (haystack.includes("auth/invalid-password") || haystack.includes("invalid password")) {
+    return "Password minimal 6 karakter.";
+  }
+  if (haystack.includes("auth/invalid-email") || haystack.includes("invalid email")) {
+    return "Format email tidak valid.";
+  }
+  if (haystack.includes("auth/invalid-credential")) {
+    return "Credential Firebase tidak valid.";
+  }
+  if (haystack.includes("permission-denied")) {
+    return "Firebase Admin tidak punya akses ke Firestore.";
+  }
   return null;
 }
 
@@ -116,22 +147,50 @@ export async function POST(request: NextRequest) {
   const status = "active";
 
   try {
-    const authUser = await createAuthUser(email, password);
-    const user = await createUserRecord({
-      email,
-      name,
-      jobPosition,
-      siteId,
-      phone,
-      role,
-      status,
-      authUid: authUser.uid,
-    });
+    await initAdminAuth();
+    const auth = getAdminAuth();
+    let authUid = "";
+    let authCreated = false;
+    try {
+      const createdAuth = await auth.createUser({ email, password });
+      authUid = createdAuth.uid;
+      authCreated = true;
+    } catch (authError) {
+      if (isAuthEmailExists(authError)) {
+        const existingAuth = await auth.getUserByEmail(email);
+        authUid = existingAuth.uid;
+      } else {
+        throw authError;
+      }
+    }
 
-    return NextResponse.json(
-      { user },
-      { status: 201 },
-    );
+    try {
+      const { user, created } = await upsertUserRecordByEmail({
+        email,
+        name,
+        jobPosition,
+        siteId,
+        phone,
+        role,
+        status,
+        authUid,
+      });
+
+      return NextResponse.json(
+        { user, created },
+        { status: created ? 201 : 200 },
+      );
+    } catch (storeError) {
+      if (authCreated && authUid) {
+        try {
+          await auth.deleteUser(authUid);
+        } catch {
+          // ignore rollback errors
+        }
+      }
+      throw storeError;
+    }
+
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("FIREBASE_SERVICE_ACCOUNT")) {
@@ -140,15 +199,27 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
-    if (message === "EMAIL_EXISTS") {
-      return NextResponse.json({ error: "Email sudah terdaftar." }, { status: 409 });
+    if (message.includes("FIREBASE_PROJECT_MISMATCH")) {
+      return NextResponse.json(
+        { error: "Firebase Admin pakai project yang berbeda dari app ini." },
+        { status: 500 },
+      );
     }
     if (message === "EMAIL_INVALID") {
       return NextResponse.json({ error: "Format email tidak valid." }, { status: 400 });
     }
 
+    const authHint = getAuthErrorHint(error);
+    if (authHint) {
+      return NextResponse.json({ error: authHint }, { status: 400 });
+    }
+
+    const detail =
+      process.env.NODE_ENV !== "production" && message
+        ? ` (${message})`
+        : "";
     return NextResponse.json(
-      { error: "Gagal membuat akun. Coba lagi." },
+      { error: `Gagal membuat akun. Coba lagi.${detail}` },
       { status: 500 },
     );
   }

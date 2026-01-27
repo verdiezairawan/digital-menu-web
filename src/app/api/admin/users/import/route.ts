@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionFromRequest } from "@/lib/auth/api";
 import { isRole, type Role } from "@/lib/auth/roles";
-import { createAuthUser } from "@/lib/firebase/authRest";
-import { createUserRecord } from "@/lib/users/store";
+import { getAdminAuth, initAdminAuth } from "@/lib/firebase/admin";
+import { upsertUserRecordByEmail } from "@/lib/users/store";
 
 export const runtime = "nodejs";
 
@@ -46,6 +46,15 @@ function generateTempPassword(): string {
   return `Dm!${random}${suffix}`;
 }
 
+function isAuthEmailExists(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  if (code.includes("auth/email-already-exists")) return true;
+  const message =
+    "message" in error ? String((error as { message?: unknown }).message ?? "") : "";
+  return message.toLowerCase().includes("email-already-exists");
+}
+
 export async function POST(request: NextRequest) {
   const session = getSessionFromRequest(request);
   if (!session) {
@@ -68,6 +77,7 @@ export async function POST(request: NextRequest) {
   }
 
   const created: Array<{ email: string; tempPassword: string }> = [];
+  const linked: Array<{ email: string }> = [];
   const failed: Array<{ email: string; reason: string }> = [];
 
   for (const row of users) {
@@ -92,31 +102,59 @@ export async function POST(request: NextRequest) {
 
     const tempPassword = generateTempPassword();
     try {
-      const authUser = await createAuthUser(email, tempPassword);
-      await createUserRecord({
-        email,
-        name,
-        jobPosition,
-        siteId,
-        phone,
-        role,
-        status: "active",
-        authUid: authUser.uid,
-      });
-      created.push({ email, tempPassword });
+      await initAdminAuth();
+      const auth = getAdminAuth();
+      let authUid = "";
+      let authCreated = false;
+      try {
+        const createdAuth = await auth.createUser({ email, password: tempPassword });
+        authUid = createdAuth.uid;
+        authCreated = true;
+        created.push({ email, tempPassword });
+      } catch (authError) {
+        if (isAuthEmailExists(authError)) {
+          const existingAuth = await auth.getUserByEmail(email);
+          authUid = existingAuth.uid;
+          linked.push({ email });
+        } else {
+          throw authError;
+        }
+      }
+
+      try {
+        await upsertUserRecordByEmail({
+          email,
+          name,
+          jobPosition,
+          siteId,
+          phone,
+          role,
+          status: "active",
+          authUid,
+        });
+      } catch (storeError) {
+        if (authCreated && authUid) {
+          try {
+            await auth.deleteUser(authUid);
+          } catch {
+            // ignore rollback errors
+          }
+        }
+        throw storeError;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (message.includes("FIREBASE_SERVICE_ACCOUNT")) {
         failed.push({ email, reason: "Firebase Admin belum dikonfigurasi." });
         continue;
       }
-      if (message === "EMAIL_EXISTS") {
-        failed.push({ email, reason: "Email sudah terdaftar." });
+      if (message.includes("FIREBASE_PROJECT_MISMATCH")) {
+        failed.push({ email, reason: "Project Firebase Admin tidak cocok." });
       } else {
         failed.push({ email, reason: "Gagal membuat akun." });
       }
     }
   }
 
-  return NextResponse.json({ created, failed }, { status: 200 });
+  return NextResponse.json({ created, linked, failed }, { status: 200 });
 }

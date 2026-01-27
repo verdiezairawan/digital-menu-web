@@ -6,14 +6,30 @@ import { resolveRoleForEmail } from "@/lib/auth/roleMapping";
 import { getAuthSecret } from "@/lib/auth/secret";
 import { resolveSiteForEmail } from "@/lib/auth/siteMapping";
 import { createSessionToken } from "@/lib/auth/token";
+import { getRoleLabel } from "@/lib/auth/roleLabel";
 import { verifyFirebaseIdToken } from "@/lib/firebase/verifyIdToken";
-import { getUserByEmail } from "@/lib/users/store";
+import { getUserByEmail, upsertUserRecordByEmail } from "@/lib/users/store";
 
 export const runtime = "nodejs";
 
 type LoginBody = {
   idToken?: unknown;
 };
+
+function normalizeBooleanEnv(value: string | undefined): boolean | null {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (["true", "1", "yes", "y"].includes(normalized)) return true;
+  if (["false", "0", "no", "n"].includes(normalized)) return false;
+  return null;
+}
+
+function shouldAutoProvision(): boolean {
+  const override = normalizeBooleanEnv(process.env.AUTH_ALLOW_AUTO_PROVISION);
+  if (override !== null) return override;
+  return process.env.NODE_ENV !== "production";
+}
 
 export async function POST(request: NextRequest) {
   let body: LoginBody;
@@ -45,12 +61,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Login tidak valid." }, { status: 401 });
   }
 
+  const mappedRole = resolveRoleForEmail(firebaseUser.email);
+  const mappedSiteId = resolveSiteForEmail(firebaseUser.email);
+
   let storedUser = null;
   try {
     storedUser = await getUserByEmail(firebaseUser.email);
   } catch {
-    storedUser = null;
+    return NextResponse.json(
+      { error: "Database user belum siap. Hubungi admin." },
+      { status: 500 },
+    );
   }
+
+  if (!storedUser && shouldAutoProvision() && mappedRole && mappedSiteId) {
+    try {
+      const { user } = await upsertUserRecordByEmail({
+        email: firebaseUser.email,
+        name: firebaseUser.name ?? firebaseUser.email,
+        jobPosition: getRoleLabel(mappedRole),
+        siteId: mappedSiteId,
+        phone: "-",
+        role: mappedRole,
+        status: "active",
+        authUid: firebaseUser.uid,
+      });
+      storedUser = user;
+    } catch {
+      // If provisioning fails, fall back to the normal "not registered" error below.
+    }
+  }
+
   if (storedUser?.status === "inactive") {
     return NextResponse.json(
       { error: "Akun sedang dinonaktifkan. Hubungi admin." },
@@ -58,7 +99,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const role = storedUser?.role ?? resolveRoleForEmail(firebaseUser.email);
+  if (!storedUser) {
+    return NextResponse.json(
+      { error: "Akun belum terdaftar di database. Hubungi admin." },
+      { status: 403 },
+    );
+  }
+
+  const role = storedUser?.role ?? mappedRole;
   if (!role) {
     return NextResponse.json(
       { error: "Akun belum punya role. Hubungi admin." },
@@ -66,7 +114,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const siteId = storedUser?.siteId ?? resolveSiteForEmail(firebaseUser.email);
+  const siteId = storedUser?.siteId ?? mappedSiteId;
   if (!siteId) {
     return NextResponse.json(
       { error: "Akun belum terdaftar ke outlet/site. Hubungi admin." },
